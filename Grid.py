@@ -81,6 +81,7 @@ class Grid_1D(Grid):
                  nb_actions: int,
                  nb_states: int,
                  ):
+        
         self.input_list = reward_list
         self.grid = np.array(reward_list)
         self.discount_factor = discount_factor
@@ -150,7 +151,9 @@ class Agent:
         self.learning_rate = lr
         self.position = starting_coords
 
+        #Just get the reward on spawn (most likely to be 0).
         self.rewards += self.grid.get_reward(self.position)
+
         print(f"At the beginning, I am at {self.position} and I have : {self.rewards}")
         self.actions = {
             "right" : 1,
@@ -196,6 +199,9 @@ class Agent:
     def get_learning_rate(self):
         return self.learning_rate
     
+    def reset_rewards(self):
+        self.rewards = 0
+
 class Q_Table:
 
     """
@@ -221,24 +227,38 @@ class Q_Table:
         #self.Q_table[0][1] = 2
         #print(self.Q_table)
     
-    def get_table(self):
+    def get_table(self) -> np.ndarray:
         return self.Q_table
 
     def update_table(self, 
                      starting_state: State, 
                      action: Action,
-                     agent: Agent):
+                     agent: Agent) -> None:
         
         """Update the Q_table using the Q_table update formula"""
 
         starting_state_number = starting_state.get_number()
         action_number = Q_Table.actions_dict[action.get_name()]
+        
         agent_learning_rate = agent.get_learning_rate()
+        
+        #After executing the action action from the starting state s_{t}, 
+        #the agent moves to a new position which is the destination state s_{t+1} and gets a reward
         agent_position = agent.get_position()
         reward = self.grid.get_reward(agent_position)
+        
+        destination_state_number = int(str(agent_position.get_y()) + str(agent_position.get_x()))
+        print(f"destination state number = {destination_state_number}")
+        
 
-        old_value = self.Q_table[starting_state_number][action_number]
-        self.Q_table[starting_state_number][action_number] = old_value + agent_learning_rate*()
+        old_Q_value = self.Q_table[starting_state_number][action_number]
+        max_Q = max(self.Q_table[destination_state_number])
+
+        print(f"maxQ in {self.Q_table[destination_state_number]} = {max_Q}")
+        
+        new_Q_value = old_Q_value + agent_learning_rate*(reward + gamma*max_Q - old_Q_value)
+        self.Q_table[starting_state_number][action_number] = new_Q_value 
+
 
     def get_value(self, 
                   state: State, 
@@ -249,13 +269,25 @@ class Q_Table:
         state_number = state.get_number()
         return self.Q_table[state_number][action_number]
 
+    def get_best_action_for_state(self, 
+                                  state: State,
+                                  action_list: list) -> Action: 
+        state_number = state.get_number()
+        max_action_number = np.argmax(self.Q_table[state_number])
+        return action_list[max_action_number]
+
     def __repr__(self):
         """Print the Q_table"""
 
         res = ""
-        res += len("s0 |" + f"{self.Q_table[0][0]}")*" " 
+        #res += len("s0 |" + f"{self.Q_table[0][0]}")*" " 
+        res += 15*" " 
         for i in range(self.nb_actions):
-            res+= f"A{i}" + "|   "
+            if i == 0:
+                res+= f"A{i} = right" + "|"
+                res += 12*" " 
+            elif i == 1:
+                res+= f"A{i} = left" + "|"        
         res+="\n"
 
         for i in range(self.nb_states):
@@ -270,10 +302,9 @@ grid1D = Grid_1D(reward,
             discount_factor=gamma,
             cost=cost,
             nb_actions=nb_action,
-            nb_states=nb_state 
-            )
+            nb_states=nb_state)
 
-starting_coords = Coordinates(1, 0)
+starting_coords = Coordinates(2, 0)
 agent = Agent(lr=alpha,
               starting_coords=starting_coords, 
               grid=grid1D)
@@ -289,8 +320,6 @@ print(f"Q_table test : {Q_table.get_value(State(0), action_left)}")
 
 grid1D_non_zero_rewards_coords = grid1D.get_non_zero_rewards_coords()
 
-
-
 action_list = [action_right, 
                action_left]
 
@@ -298,15 +327,34 @@ action_list = [action_right,
 #the movement cost will still apply and the reward will still apply
 if __name__ == "__main__":
     print("")
-    for i in range(1, 10):
-        move = random.choice(action_list)
-        print("######")
-        print(f"I move to the {move}")
-        agent.move(move)
-        agent_position = agent.get_position()
-        if agent_position in grid1D_non_zero_rewards_coords:
-            print(f"I reached a reward case diffrent from 0 in {i} actions !")
-            break
+    for game in range(1, 1000):
+        continue_episode = True
+        
+        while continue_episode:
+            
+            agent_position_before_moving = agent.get_position()
+            starting_state_number = int(str(agent_position_before_moving.get_y()) + str(agent_position_before_moving.get_x()))
+            print(f"starting state number = {starting_state_number}")
+            
+            epsilon = random.choice(range(1, 11))
+            if epsilon > 2:
+                move = random.choice(action_list)
+            else:
+                move = Q_table.get_best_action_for_state(state=State(starting_state_number), 
+                                                         action_list=action_list)
+            print("######")
+            
+            agent.move(move)
+            print(f"I move to the {move}")
+            agent_position_after_moving = agent.get_position()
+            Q_table.update_table(State(starting_state_number),
+                                move,
+                                agent)
 
-    print(f"I have now : {agent.get_rewards()}")
+            if agent_position_after_moving in grid1D_non_zero_rewards_coords:
+                #print(f"I reached a reward case diffrent from 0 in {i} actions !")
+                continue_episode = False
+                print(f"I have now : {agent.get_rewards()}")
+                print(Q_table)
+                agent.reset_rewards()
     print("END")
