@@ -49,13 +49,13 @@ class Q_Table:
         reward = self.grid.get_reward(agent_position)
         
         destination_state_number = int(str(agent_position.get_y()) + str(agent_position.get_x()))
-        print(f"destination state number = {destination_state_number}")
+        #print(f"destination state number = {destination_state_number}")
         
 
         old_Q_value = self.Q_table[starting_state_number][action_number]
         max_Q = max(self.Q_table[destination_state_number])
 
-        print(f"maxQ in {self.Q_table[destination_state_number]} = {max_Q}")
+        #print(f"maxQ in {self.Q_table[destination_state_number]} = {max_Q}")
         
         new_Q_value = old_Q_value + agent_learning_rate*(reward + discount_factor*max_Q - old_Q_value)
         self.Q_table[starting_state_number][action_number] = new_Q_value 

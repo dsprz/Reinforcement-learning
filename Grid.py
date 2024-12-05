@@ -40,7 +40,7 @@ class Grid_1D(Grid):
 
         self.non_zero_rewards_coords = [Coordinates(reward_list.index(i), 0) for i in reward_list if i != 0]
 
-        print(f"Cases with non zero rewards : {self.non_zero_rewards_coords}")
+        #print(f"Cases with non zero rewards : {self.non_zero_rewards_coords}")
 
     def get_grid(self):
         return self.grid

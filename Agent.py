@@ -17,7 +17,7 @@ class Agent:
         #Just get the reward on spawn (most likely to be 0).
         self.rewards += self.grid.get_reward(self.position)
 
-        print(f"At the beginning, I am at {self.position} and I have : {self.rewards}")
+        #print(f"At the beginning, I am at {self.position} and I have : {self.rewards}")
         self.actions = {
             "right" : 1,
             "left": 1,
@@ -49,7 +49,7 @@ class Agent:
             y += position_change
         
         self.position = Coordinates(x, y)
-        print(f"I am now at {self.position}")
+        #print(f"I am now at {self.position}")
         self.rewards -= movement_cost
         self.rewards += self.grid.get_reward(self.position)
     

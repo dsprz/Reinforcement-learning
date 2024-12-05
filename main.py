@@ -13,8 +13,12 @@ nb_action = 2
 nb_state = 6
 
 # the tab with the representation of the 6 states (-1 for the bad end, 1 for the good end, and 0 for other states)
-reward = [-1,0,0,0,0,1]
+#reward = [-1,0,0,0,0,1]
+reward = [0 for i in range(nb_state)]
+reward[0] = -1
+reward[-1] = 1
 
+print(f"reward_list = {reward}")
 # cost of one move
 cost = 0.01
 
@@ -25,47 +29,52 @@ alpha = 0.9
 gamma = 0.5
 
 
-
-
+# initialize the 1D grid
 grid1D = Grid_1D(reward, 
             discount_factor=gamma,
             cost=cost,
             nb_actions=nb_action,
             nb_states=nb_state)
 
+# Initialize the agent with arbitrarly chosen starting coordinates
 starting_coords = Coordinates(2, 0)
 agent = Agent(lr=alpha,
               starting_coords=starting_coords, 
               grid=grid1D)
 
-
+#Initialize the possible actions in 1D
 action_right = Action("right", +1)
 action_left = Action("left", -1)
-
-Q_table = Q_Table(nb_state, 
-                  nb_action, 
-                  grid=grid1D)
-print(f"Q_table test : {Q_table.get_value(State(0), action_left)}")
-
-grid1D_non_zero_rewards_coords = grid1D.get_non_zero_rewards_coords()
-
 action_list = [action_right, 
                action_left]
 
+#Initalize the Q_table
+Q_table = Q_Table(nb_state, 
+                  nb_action, 
+                  grid=grid1D)
+
+# print(f"Q_table test : {Q_table.get_value(State(0), action_left)}")
+
+#Get all cells with rewards!=0
+grid1D_non_zero_rewards_coords = grid1D.get_non_zero_rewards_coords()
+
+
 if __name__ == "__main__":
     print("")
-    games_to_be_played = 500
+
+    games_to_be_played = 1500
     for game in range(games_to_be_played):
         
         continue_episode = True        
         
         while continue_episode:
-            print("######")
+            #print("######")
 
             #Get the starting state information
             agent_position_before_moving = agent.get_position()
             starting_state_number = int(str(agent_position_before_moving.get_y()) + str(agent_position_before_moving.get_x()))
-            print(f"starting state number = {starting_state_number}")
+            
+            #print(f"starting state number = {starting_state_number}")
             
             #Choose a move to explore or to exploit
             epsilon = random.choice(range(1, 11))
@@ -79,7 +88,8 @@ if __name__ == "__main__":
             
             #The agent moves to another state
             agent.move(move)
-            print(f"I move to the {move}")
+            
+            #print(f"I move to the {move}")
 
             #Get destination state info (s_{t+1}) and update the Q table
             agent_position_after_moving = agent.get_position()
@@ -91,7 +101,10 @@ if __name__ == "__main__":
             #End the episode if the agent ends up in a reward!=0 cell 
             if agent_position_after_moving in grid1D_non_zero_rewards_coords:
                 continue_episode = False
-                print(f"I have now : {agent.get_rewards()}")
-                print(Q_table)
+                
+                #print(f"I have now : {agent.get_rewards()}")
+                #print(Q_table)
                 agent.reset_rewards()
+    print("Final Q table = \n")
+    print(Q_table)
     print("END")
