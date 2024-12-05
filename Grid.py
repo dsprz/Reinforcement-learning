@@ -17,27 +17,46 @@ alpha = 0.9
 
 # discount factor that shows how much you care about future (remember 0 for myopic)
 gamma = 0.5
-
-class QTable:
-
-    def __init__(self, nb_states, nb_actions):
-        self.nb_states = nb_states
-        self.nb_actions = nb_actions
-        self.Q_table = np.zeros((nb_states, nb_actions))
+class State:
+    """
+        Class to represent a state.
+        A state has a number for easier access to the Q_table 
+    """
+    def __init__(self, 
+                 number: int):
+        self.number = number
     
-    def get_table(self):
-        return self.Q_table
+    def get_number(self):
+        return self.number
 
-    def update_table(self):
-        pass
+class Action:
+    
+    """
+        Class that represents an action.
+        An action has a name (e.g. 'right' or 'left') and a position change (e.g. 'right' means +1 on the x-axis, 'left' means -1 on the left axis)
+        Position change can be changed to move more than 1 cell, but it should always be a positive int.
+    """
+
+    def __init__(self, 
+                 name: str,
+                 position_change: int):
+        self.name = name
+        self.position_change = position_change
+    
+    def get_name(self):
+        return self.name
+
+    def get_position_change(self):
+        return self.position_change
 
     def __repr__(self):
-        res = ""
-        for i in range(self.nb_states):
-            pass
+        return self.name
 
+
+    
 class Grid(ABC):
-    pass
+
+    """An abstract class representing any grid"""
 
     @abstractmethod
     def get_cost(self):
@@ -46,10 +65,15 @@ class Grid(ABC):
     @abstractmethod
     def get_grid_length(self):
         pass
-
+    
+    @abstractmethod
+    def get_reward(self):
+        pass
 
 class Grid_1D(Grid):
-    
+
+    """A class representing a 1-D grid"""
+
     def __init__(self, 
                  reward_list: list, 
                  discount_factor: float,
@@ -63,13 +87,11 @@ class Grid_1D(Grid):
         self.cost = cost
         self.nb_actions = nb_actions
         self.nb_states = nb_states
-        self.Q_table = QTable(self.nb_states, self.nb_actions)
+        #self.Q_table = Q_Table(self.nb_states, self.nb_actions)
 
-        #self.negative_reward_coords = [Coordinates(reward_list.index(i), 0) for i in reward_list if i < 0]
-        #self.positive_reward_coords = [Coordinates(reward_list.index(i), 0) for i in reward_list if i > 0]
         self.non_zero_rewards_coords = [Coordinates(reward_list.index(i), 0) for i in reward_list if i != 0]
 
-        print(self.non_zero_rewards_coords)
+        print(f"Cases with non zero rewards : {self.non_zero_rewards_coords}")
 
     def get_grid(self):
         return self.grid
@@ -89,6 +111,8 @@ class Grid_1D(Grid):
 
 
 class Coordinates:
+
+    """A class to hold the coordinates of the agent in a grid"""
 
     def __init__(self, x, y):
         self.x = x
@@ -120,6 +144,7 @@ class Agent:
                  lr: float, 
                  starting_coords: Coordinates,
                  grid: Grid):
+        
         self.grid = grid
         self.rewards = 0
         self.learning_rate = lr
@@ -135,25 +160,30 @@ class Agent:
         }
     
     def move(self, 
-             action: str):
-        
+             action: Action):
+        """
+            Make the agent move after using the Action action.
+            The movement cost penalty is applied for every action.
+        """
         movement_cost = self.grid.get_cost()
 
         x = self.position.get_x()
         y = self.position.get_y()
         grid_length = self.grid.get_grid_length()
+        action_name = action.get_name()
+        position_change = action.get_position_change()
 
-        if action == "right" and x < grid_length - 1:
-            x += self.actions[action]
-        elif action == "left" and x > 0:
-            x -= self.actions[action]
-        elif action == "up":
-            y += self.actions[action]
-        elif action == "down":
-            y -= self.actions[action]
+        if action_name == "right" and x < grid_length - 1:
+            x += position_change
+        elif action_name == "left" and x > 0:
+            x += position_change
+        elif action_name == "up":
+            y += position_change
+        elif action_name == "down":
+            y += position_change
         
         self.position = Coordinates(x, y)
-        print(self.position)
+        print(f"I am now at {self.position}")
         self.rewards -= movement_cost
         self.rewards += self.grid.get_reward(self.position)
     
@@ -162,7 +192,80 @@ class Agent:
 
     def get_position(self):
         return self.position
+
+    def get_learning_rate(self):
+        return self.learning_rate
     
+class Q_Table:
+
+    """
+        Class representing a Q_table.
+    """
+
+    actions_dict = {
+        "right" : 0,
+        "left" : 1
+    }
+
+    def __init__(self, 
+                 nb_states: int, 
+                 nb_actions: int, 
+                 grid: Grid):
+        self.nb_states = nb_states
+        self.nb_actions = nb_actions
+        self.grid = grid
+
+        #initialize the Q_table to 0
+        self.Q_table = np.zeros((nb_states, nb_actions))
+        
+        #self.Q_table[0][1] = 2
+        #print(self.Q_table)
+    
+    def get_table(self):
+        return self.Q_table
+
+    def update_table(self, 
+                     starting_state: State, 
+                     action: Action,
+                     agent: Agent):
+        
+        """Update the Q_table using the Q_table update formula"""
+
+        starting_state_number = starting_state.get_number()
+        action_number = Q_Table.actions_dict[action.get_name()]
+        agent_learning_rate = agent.get_learning_rate()
+        agent_position = agent.get_position()
+        reward = self.grid.get_reward(agent_position)
+
+        old_value = self.Q_table[starting_state_number][action_number]
+        self.Q_table[starting_state_number][action_number] = old_value + agent_learning_rate*()
+
+    def get_value(self, 
+                  state: State, 
+                  action: Action):
+        """Get the value of Q(state, action)"""
+
+        action_number = Q_Table.actions_dict[action.get_name()]
+        state_number = state.get_number()
+        return self.Q_table[state_number][action_number]
+
+    def __repr__(self):
+        """Print the Q_table"""
+
+        res = ""
+        res += len("s0 |" + f"{self.Q_table[0][0]}")*" " 
+        for i in range(self.nb_actions):
+            res+= f"A{i}" + "|   "
+        res+="\n"
+
+        for i in range(self.nb_states):
+            res += f"s{i}" + " |" 
+            for j in range(self.nb_actions):
+                res += " " f"{self.Q_table[i][j]}" + " |"
+            res += "\n"
+        return res
+    
+
 grid1D = Grid_1D(reward, 
             discount_factor=gamma,
             cost=cost,
@@ -176,19 +279,34 @@ agent = Agent(lr=alpha,
               grid=grid1D)
 
 
+action_right = Action("right", +1)
+action_left = Action("left", -1)
+
+Q_table = Q_Table(nb_state, 
+                  nb_action, 
+                  grid=grid1D)
+print(f"Q_table test : {Q_table.get_value(State(0), action_left)}")
+
+grid1D_non_zero_rewards_coords = grid1D.get_non_zero_rewards_coords()
+
+
+
+action_list = [action_right, 
+               action_left]
+
 #If the agent is on a reward case other than 0 and decides do pick a move that does not allow to effectively move,
 #the movement cost will still apply and the reward will still apply
-
-action_list = ["right", "left"]
 if __name__ == "__main__":
-
-    for i in range(10):
+    print("")
+    for i in range(1, 10):
         move = random.choice(action_list)
+        print("######")
         print(f"I move to the {move}")
         agent.move(move)
         agent_position = agent.get_position()
-        if agent_position in grid1D.get_non_zero_rewards_coords():
-            print(f"J'ai atteint une case reward différente de 0 en {i} actions !")
+        if agent_position in grid1D_non_zero_rewards_coords:
+            print(f"I reached a reward case diffrent from 0 in {i} actions !")
             break
 
     print(f"I have now : {agent.get_rewards()}")
+    print("END")
