@@ -31,7 +31,7 @@ import time
         GAMMA = 0.85
         MOVE_COST = 1
         EPISLON = 0.2
-        MAX_TRAINING_GAMES = 500
+        MAX_TRAINING_GAMES = 2000
         LEARNING_RATE = 0.1
 """
 
@@ -72,6 +72,12 @@ Y_LENGTH = len(game.floor.get_mat()[0])
 GAMMA = 0.95 #discount factor
 
 #Has an influence on convergence
+# Convergence is guaranteed if sum->inf(alpha_n(A)) = inf AND sum->(alpha_n(A)^2) < inf where n is the sum index and A is an action from the set of actions
+# The first condition is required to guarantee that the steps are large enough to eventually overcome any initial conditions or random fluctuations. 
+# The second condition guarantees that eventually the steps become small enough to assure convergence.
+# http://incompleteideas.net/book/RLbook2020.pdf page 55
+# If alpha_n(A) is constant, i.e. fixing LEARNING_RATE = cst, then convergence is not always guaranteed
+# Uncomplete convergence is often desirable because the environment may be nonstationary in most cases
 LEARNING_RATE = 0.1
 
 hero.set_learning_rate(LEARNING_RATE)
@@ -80,7 +86,7 @@ REWARDS = np.array(game.get_map().get_rewards_map())
 
 
 # Has an influence on convergence
-# Try with MOVE_COST = 1 and MOVE_COST = 10, map 40x40, 10 rooms, 50000 training games
+# Try with MOVE_COST = 1 and MOVE_COST = 10, map 40x40, 10 rooms, 50000 training games, seed=4
 # MOVE_COST = 0 => Does not converge
 # MOVE_COST = 0.1 => Does not converge
 # MOVE_COST = 0.8 => Does not converge
@@ -104,7 +110,8 @@ MOVE_COST = 1 #Tous les pas sont similaires et négatifs
 
 STAIRS_COORDS = game.floor.stairs_coordinates
 
-#Has an influence on convergence
+# Has an influence on convergence
+# If set too low, the model has a chance to not converge
 MAX_TRAINING_GAMES = 2000
 
 #End state i.e. the stairs
@@ -152,7 +159,23 @@ def play(update_q_table=True):
     #Make a move to another state
     #print("Preparing to move...")
 
+
+
     #Pick a move at random 80% of the time
+    """
+        The greedy actions are those that look best at present, but some of
+        the other actions may actually be better. "Epsilon-greedy action selection forces the non-greedy
+        actions to be tried, but indiscriminately, with no preference for those that are nearly
+        greedy or particularly uncertain. It would be better to select among the non-greedy
+        actions according to their potential for actually being optimal, taking into account both
+        how close their estimates are to being maximal and the uncertainties in those estimates
+        Page 57
+    """
+    #We could choose A with :
+    # A = argmax(a) [Qt(a) + c*sqrt( ln(t)/ N_t(a) )]
+    # where N_t(a) is the number of times action a has been selected prior to time t
+    # c is a strictly positive value that controls the degree of exploration
+
     if random.random() > choose_at_move_at_random_threshold:
         move_number = random.choice([0, 3])
 
@@ -195,7 +218,11 @@ def play(update_q_table=True):
 
     #print(f"destination state : {destination_state}")
 
-    #Add the destination state to the q table if it does not exist
+    # Add the destination state to the q table if it does not exist and initialize it/bias it to 0
+    # It is possible to change the bias to encourage exploration by initializing to a large value relative to the actual rewards so the agent is disappointed in the rewards
+    # thus it encourages the agent to try new actions 
+    # Such large initialized values are called "optimisic initial values"
+    # However if the task changes, the optimistic initial values will not help.
     q_table.setdefault(destination_state, [0 for action in range (len(Hero.ACTIONS))])
     
     
