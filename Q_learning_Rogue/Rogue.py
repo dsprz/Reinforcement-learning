@@ -9,7 +9,7 @@ import numpy as np
 #To deep copy a list 
 import copy
 
-random.seed(4)
+#random.seed(4)
 
 window = Tk()  # Fenêtre de l'interface graphique
 window.title("Rogue")  # Titre
@@ -64,8 +64,9 @@ class Element:
     def meet(self, hero):
         # Escalier qui permet de changer d'étage, pour simplifier le code et ne pas creer une autre classe, je l'ai mit ici
         #theGame().level += 1
-        print("STAIRS REACHED")
+        #print("STAIRS REACHED")
         #theGame().play()
+        pass
 
 
 class Equipment(Element):
@@ -418,14 +419,14 @@ class Map:
                 self._mat[orig.y][orig.x] = Map.ground
                 self._mat[dest.y][dest.x] = e
                 self._elem[e] = dest
-                print(f"{dest} is Map.ground")
+                #print(f"{dest} is Map.ground")
             
             elif self.get(dest) == Map.STAIRS:
                 #Make the stairs a passable tile
                 self._mat[orig.y][orig.x] = Map.ground
                 self._mat[dest.y][dest.x] = e
                 self._elem[e] = dest
-                print("STAIRS REACHED")
+                #print("STAIRS REACHED")
 
             elif self.get(dest) != Map.empty and self.get(dest).meet(e) and self.get(dest) != self.hero:
                 self.rm(dest)
@@ -433,7 +434,9 @@ class Map:
             #Allows the hero to mistakenly walk into a wall (cliff)
             #The cliff "kills" the hero and makes him reset at its starting location
             elif self.get(dest) == Map.empty:
-                print(f"dest {dest} is a cliff !")
+                
+                #print(f"dest {dest} is a cliff !")
+                
                 if self.hero.reset_on_cliff:
                     #Resets the hero at its starting position if reset_on_cliff is set to True
                     #Must remove the hero by setting the cell to map.ground, otherwise there would be 2 heroes
